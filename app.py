@@ -3,6 +3,8 @@ Customer Segmentation & Purchase Classification dashboard
 Data: UCI Online Retail II (cleaned file exported from the project notebook)
 Run:  streamlit run app.py
 """
+import os
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -25,7 +27,8 @@ st.set_page_config(page_title="Customer Segmentation Dashboard", layout="wide")
 # ----------------------------------------------------------------------------
 # Settings (taken from the project notebook)
 # ----------------------------------------------------------------------------
-DATA_FILE = "online_retail_cleaned.csv"
+# The app uses the first of these files that exists (the .gz version is much smaller).
+DATA_FILES = ["online_retail_cleaned.csv.gz", "online_retail_cleaned.csv"]
 RANDOM_STATE = 42
 N_CLUSTERS = 4
 KPCA_GAMMA = 0.1
@@ -49,8 +52,11 @@ SEGMENT_MEANING = {
 # ----------------------------------------------------------------------------
 @st.cache_data
 def load_data():
+    path = next((p for p in DATA_FILES if os.path.exists(p)), None)
+    if path is None:
+        raise FileNotFoundError(DATA_FILES[0])
     df = pd.read_csv(
-        DATA_FILE,
+        path,
         parse_dates=["InvoiceDate"],
         dtype={"CustomerID": str, "InvoiceNo": str, "StockCode": str},
     )
@@ -206,7 +212,8 @@ def confusion_figure(cm, labels, title):
 try:
     df_all = load_data()
 except FileNotFoundError:
-    st.error(f"Could not find '{DATA_FILE}'. Put it in the same folder as app.py and rerun.")
+    st.error(f"Could not find '{DATA_FILES[0]}' (or '{DATA_FILES[1]}'). "
+             "Put it in the same folder as app.py and rerun.")
     st.stop()
 
 PAGES = ["How to read this", "Overview", "Customer segments", "Classification",
